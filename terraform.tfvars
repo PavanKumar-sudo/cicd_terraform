@@ -1,0 +1,7 @@
+aws_region="us-east-1"
+ami_id="ami-0953476d60561c955"
+instance_type="t2.micro"
+keypair_name="keypair"
+s3_bucket="s2-ec2-1"
+s3_key="terraform/state.tfstate"
+dynamodb_table="terraform-state-lock"
