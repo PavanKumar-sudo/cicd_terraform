@@ -55,6 +55,14 @@ jobs:
           exit_code=$?
           echo "exit_code=$exit_code" >> $GITHUB_OUTPUT
 
+      - name: Debug Terraform Plan Exit Code
+        run: |
+          echo "Actual exit code from tfplan step: '${{ steps.tfplan.outputs.exit_code }}'"
+          echo "github.ref: '${{ github.ref }}'"
+          echo "github.event_name: '${{ github.event_name }}'"
+          echo "Comparison result (exit_code == '2'): ${{ steps.tfplan.outputs.exit_code == '2' }}"
+          echo "Full condition: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.tfplan.outputs.exit_code == '2' }}"
+
       - name: Apply Terraform Changes
         if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.tfplan.outputs.exit_code == '2'
         run: terraform apply -auto-approve
