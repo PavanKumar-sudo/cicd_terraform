@@ -22,21 +22,3 @@ variable keypair_name {
   default     = "my-keypair" # Replace with your actual key pair name
 }
 
-variable s3_bucket {
-  description = "The name of the S3 bucket for storing Terraform state"
-  type        = string
-  default     = "my-terraform-state-bucket" # Replace with your actual S3 bucket name
-}
-
-variable s3_key {
-  description = "The key for the Terraform state file in S3"
-  type        = string
-  default     = "terraform/state.tfstate"
-}
-
-variable dynamodb_table {
-  description = "The name of the DynamoDB table for state locking"
-  type        = string
-  default     = "terraform-state-lock" # Replace with your actual DynamoDB table name
-}
-

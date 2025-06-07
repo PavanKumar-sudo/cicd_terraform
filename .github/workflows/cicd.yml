@@ -40,11 +40,19 @@ jobs:
       - name: Initialize Terraform
         run: terraform init
 
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_BACKEND_BUCKET }}" \
+            -backend-config="key=ec2/terraform.tfstate" \
+            -backend-config="region=${{ secrets.AWS_REGION }}" \
+            -backend-config="dynamodb_table=${{ secrets.TF_LOCK_TABLE }}"
+
       - name: Validate Terraform Configuration
         run: terraform validate
 
       - name: Plan Terraform Changes
-        run: terraform plan
+        run: terraform plan -auto-approve
 
       - name: Apply Terraform Changes
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
