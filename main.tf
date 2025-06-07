@@ -50,7 +50,10 @@ resource "aws_instance" "ec2q1" {
   vpc_security_group_ids = [aws_security_group.ec2_sg1.id]
   user_data = file("${path.module}/user_data.sh")
 
-  tags = {
-    Name = "ExampleInstance"
-  }
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name}-ec2-instance"
+    }
+  )
 }
