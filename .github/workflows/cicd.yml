@@ -67,7 +67,7 @@ jobs:
         # This condition will now trigger 'apply' for 'push' to 'main' if
         # the plan resulted in NO_CHANGES (0) OR CHANGES_PENDING (2).
         # It will NOT trigger if the plan resulted in an ERROR (1).
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.tfplan.outputs.exit_code = '2'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.tfplan.outputs.exit_code == '2'
         run: |
           echo "Applying Terraform changes using saved plan..."
           terraform apply -auto-approve tfplan 
