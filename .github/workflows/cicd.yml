@@ -3,13 +3,28 @@ name: CICD Pipeline for EC2 Creation
 on:
   push:
     branches:
-      - main
+      - main 
+    paths:
+      - '**.tf'
+      - '**.tfvars'
   pull_request:
+    branches:
+      - main # Run plan on PRs targeting main
+    paths:
+      - '**.tf'
+      - '**.tfvars'
 
 jobs:
   terraform:
     name: Terraform Plan and Apply
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # Using ubuntu-latest for up-to-date runner image
+
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      TF_BACKEND_BUCKET: ${{ secrets.TF_BACKEND_BUCKET }}
+      TF_LOCK_TABLE: ${{ secrets.TF_LOCK_TABLE }}
 
     steps:
       - name: Checkout Code
@@ -18,42 +33,48 @@ jobs:
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.2.0
-      
+          terraform_version: 1.5.0 
+
       - name: Show Terraform Version
         run: terraform version
 
       - name: Show AWS CLI Version
         run: aws --version
-      
+
       - name: Print Environment Info
         run: env | sort
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-      
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }} # Using env context
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }} # Using env context
+          aws-region: ${{ env.AWS_REGION }} # Using env context
+
       - name: Terraform Init
         run: |
           terraform init \
-            -backend-config="bucket=${{ secrets.TF_BACKEND_BUCKET }}" \
+            -backend-config="bucket=${{ env.TF_BACKEND_BUCKET }}" \
             -backend-config="key=ec2/terraform.tfstate" \
-            -backend-config="region=${{ secrets.AWS_REGION }}" \
-            -backend-config="dynamodb_table=${{ secrets.TF_LOCK_TABLE }}"
+            -backend-config="region=${{ env.AWS_REGION }}" \
+            -backend-config="dynamodb_table=${{ env.TF_LOCK_TABLE }}"
 
       - name: Validate Terraform Configuration
         run: terraform validate
 
       - name: Terraform Plan
-        id: tfplan
+        id: tfplan 
         run: |
-          set +e # Disable exit on error for this shell script block
-          terraform plan -detailed-exitcode
-          exit_code=$?
-          echo "exit_code=$exit_code" >> $GITHUB_OUTPUT
+          set +e # IMPORTANT: Disable exit on error for this shell block to ensure output capture even if plan fails
+          terraform plan -out=tfplan -detailed-exitcode # Save plan to file, use detailed exit code
+          PLAN_EXIT_CODE=$?
+          echo "exit_code=$PLAN_EXIT_CODE" >> $GITHUB_OUTPUT # Pass exit code as step output
+
+          # Also, show the plan output for easier debugging/review in the logs
+          terraform show -no-color tfplan > plan_output.txt
+          cat plan_output.txt
+
+        continue-on-error: true # Ensures subsequent steps run even if plan fails (exit code 1)
 
       - name: Debug Terraform Plan Exit Code
         run: |
@@ -61,8 +82,14 @@ jobs:
           echo "github.ref: '${{ github.ref }}'"
           echo "github.event_name: '${{ github.event_name }}'"
           echo "Comparison result (exit_code == '2'): ${{ steps.tfplan.outputs.exit_code == '2' }}"
-          echo "Full condition: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.tfplan.outputs.exit_code == '2' }}"
+          # Changed this line to reflect the new desired logic
+          echo "Full apply condition: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.tfplan.outputs.exit_code != '1' }}"
 
       - name: Apply Terraform Changes
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.tfplan.outputs.exit_code == '2'
-        run: terraform apply -auto-approve
+        # This condition will now trigger 'apply' for 'push' to 'main' if
+        # the plan resulted in NO_CHANGES (0) OR CHANGES_PENDING (2).
+        # It will NOT trigger if the plan resulted in an ERROR (1).
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.tfplan.outputs.exit_code != '1'
+        run: |
+          echo "Applying Terraform changes using saved plan..."
+          terraform apply -auto-approve tfplan # Use the saved plan file
