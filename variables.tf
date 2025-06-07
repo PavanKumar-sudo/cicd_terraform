@@ -22,3 +22,13 @@ variable keypair_name {
   default     = "my-keypair" # Replace with your actual key pair name
 }
 
+variable business_divsion {
+  description = "The business division responsible for the resources"
+  type        = string
+  default     = "default-division" # Replace with your actual business division
+}
+variable environment {
+  description = "The environment for the resources (e.g., dev, staging, prod)"
+  type        = string
+  default     = "dev" # Replace with your actual environment
+}
