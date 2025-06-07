@@ -47,9 +47,12 @@ jobs:
       - name: Validate Terraform Configuration
         run: terraform validate
 
-      - name: Plan Terraform Changes
-        run: terraform plan
+      - name: Terraform Plan
+        id: tfplan
+        run: |
+          terraform plan -detailed-exitcode || true
+          echo "TF_EXIT_CODE=$?" >> $GITHUB_ENV
 
       - name: Apply Terraform Changes
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && env.TF_EXIT_CODE == '2'
         run: terraform apply -auto-approve
