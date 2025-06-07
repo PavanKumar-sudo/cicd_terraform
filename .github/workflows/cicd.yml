@@ -7,12 +7,15 @@ on:
     paths:
       - '**.tf'
       - '**.tfvars'
+      - '**.yml'
   pull_request:
     branches:
       - main # Run plan on PRs targeting main
     paths:
       - '**.tf'
       - '**.tfvars'
+      - '**.yml'
+
 
 jobs:
   terraform:
