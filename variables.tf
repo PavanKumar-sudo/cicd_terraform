@@ -4,10 +4,16 @@ variable aws_region {
   default     = "us-east-1"
 }
 
-variable ami_id {
-  description = "The AMI ID to use for the EC2 instance"
+# variable ami_id {
+#   description = "The AMI ID to use for the EC2 instance"
+#   type        = string
+#   default     = "ami-0c55b159cbfafe1f0" # Example AMI ID, replace with a valid one
+# }
+
+variable "os_type" {
+  description = "Operating system type (amazon or ubuntu)"
   type        = string
-  default     = "ami-0c55b159cbfafe1f0" # Example AMI ID, replace with a valid one
+  default     = "amazon"
 }
 
 variable instance_type {
