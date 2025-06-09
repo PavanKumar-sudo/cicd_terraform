@@ -9,8 +9,6 @@ on:
       - '**.tfvars'
       - '**.yml'
       - '**.sh'
-  schedule:
-    - cron: '*/5 * * * *' # Every 5 minutes
 
 jobs:
   terraform:
@@ -36,12 +34,6 @@ jobs:
       - name: Show Terraform Version
         run: terraform version
 
-      - name: Show AWS CLI Version
-        run: aws --version
-
-      - name: Print Environment Info
-        run: env | sort
-
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -57,23 +49,22 @@ jobs:
             -backend-config="region=${{ env.AWS_REGION }}" \
             -backend-config="dynamodb_table=${{ env.TF_LOCK_TABLE }}"
 
-      - name: Validate Terraform Configuration
+      - name: Terraform Validate
         run: terraform validate
 
       - name: Terraform Plan
         id: tfplan
         run: |
-          set +e
+          # Run terraform plan and capture its exit code
           terraform plan -out=tfplan -detailed-exitcode
           PLAN_EXIT_CODE=$?
-          echo "TF_PLAN_EXIT_CODE=$PLAN_EXIT_CODE" >> $GITHUB_ENV
+          
+          # Output the exit code to GITHUB_OUTPUT
+          echo "exit_code=$PLAN_EXIT_CODE" >> $GITHUB_OUTPUT
+          
+          # Show the plan output
           terraform show -no-color tfplan > plan_output.txt
           cat plan_output.txt
-          exit 0
-        continue-on-error: true
 
       - name: Apply Terraform Changes
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && env.TF_PLAN_EXIT_CODE != '1'
-        run: |
-          echo "Changes detected, applying Terraform plan..."
-          terraform apply -auto-approve tfplan
+        run: terraform apply -auto-approve tfplan

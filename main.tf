@@ -36,12 +36,16 @@ resource "aws_security_group" "ec2_sg1"{
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  tags = {
-    Name = "ec2-sg"
-  }
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name}-secuirtygroup-ec2-instance"
+    }
+  )
 }
 
 resource "aws_instance" "ec2q1" {
+  for_each = local.ec2_instances
   ami           = var.ami_id 
   instance_type = var.instance_type
   key_name      = var.keypair_name
@@ -53,7 +57,7 @@ resource "aws_instance" "ec2q1" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${local.name}-ec2-instance"
+      Name = "${local.name}-${each.value.name}"
     }
   )
 }

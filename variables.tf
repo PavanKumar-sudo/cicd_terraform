@@ -32,3 +32,15 @@ variable environment {
   type        = string
   default     = "dev" # Replace with your actual environment
 }
+
+variable app1_instance_name {
+  description = "The name of the first application instance"
+  type        = string
+  default     = "first-instance" # Replace with your actual instance name
+}
+
+variable app2_instance_name {
+  description = "The name of the second application instance"
+  type        = string
+  default     = "second-instance" # Replace with your actual instance name
+}
